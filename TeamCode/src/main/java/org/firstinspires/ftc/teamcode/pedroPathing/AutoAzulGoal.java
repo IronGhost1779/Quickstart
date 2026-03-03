@@ -3,7 +3,6 @@ package org.firstinspires.ftc.teamcode.pedroPathing;
 import android.util.Size;
 
 import com.pedropathing.follower.Follower;
-import com.pedropathing.geometry.BezierCurve;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
@@ -33,10 +32,10 @@ import org.firstinspires.ftc.vision.opencv.PredominantColorProcessor;
 import java.util.ArrayList;
 import java.util.List;
 
-@Autonomous(name="Auto Azul Audiencia")
-public class AutoAzulAudiencia extends OpMode {
+@Autonomous(name="Auto Azul Goal")
+public class AutoAzulGoal extends OpMode {
 
-// ---------------- HARDWARE ----------------
+    // ---------------- HARDWARE ----------------
 
     private DcMotorEx M_lanzador1, M_lanzador2, Recogedor, M_licuadora;
 
@@ -50,21 +49,21 @@ public class AutoAzulAudiencia extends OpMode {
 
     private Limelight3A limaluz;
 
-// ---------------- LIMELIGHT ----------------
+    // ---------------- LIMELIGHT ----------------
 
     private static final int pipelineLeer = 5;
     private static final int pipelineAlinear = 6;
 
     public int leidoID = -1;
 
-// ---------------- MOR ----------------
+    // ---------------- MOR ----------------
 
     ArrayList<Boolean> lista_MOR = new ArrayList<Boolean>();
 
     private boolean morListo = false;
     private boolean licuadoraListaInicio = false;
 
-// ---------------- SLOTS / LICUADORA ----------------
+    // ---------------- SLOTS / LICUADORA ----------------
 
     private static final int SLOT_X = 0;
     private static final int SLOT_A = 1;
@@ -88,20 +87,20 @@ public class AutoAzulAudiencia extends OpMode {
     private int licuadoraTargetCounts = 0;
     private static final int toleranciaLicuadora = 8;
 
-// ---------------- DISPARO ----------------
+    // ---------------- DISPARO ----------------
 
     double goalY = 332.74;
     double goalX = 40.64;
     double xb;
 
     double H2 = 0.85675;
-    double Thetai = -45;
+    double Thetai = -45; // 45
     double Theta0 = 0;
     double direccion = 0;
 
-// ---------------- CONTROL (ALINEACIÓN) ----------------
+    // ---------------- CONTROL (ALINEACIÓN) ----------------
 
-    private static final double kP = 0.01;
+    private static final double kP = 0.008; // 0.008
     private static final double kD = 0.0006;
     private static final double kI = 0.0015;
     private double errorAnterior = 0.0;
@@ -114,23 +113,27 @@ public class AutoAzulAudiencia extends OpMode {
 
     private double correccion = SERVO_CENTER;
 
-    private static final double tolerancia = 0.29;
+    private static final double tolerancia = 0.34;
 
-    private static final long p5Ms = 25;
-    private static final long timeutAlinearMs = 3500;
+    private static final long p5Ms = 50;
+    private static final long timeutAlinearMs = 3000;
 
     private long preStart = 0;
     private long alignStart = 0;
+    private static final double headingPre = Math.toRadians(180);
+    private static final double deltaRotacionInch = 0.08;
 
-// ---------------- POWER CONTROL ----------------
+    // ---------------- POWER CONTROL ----------------
 
     private static final double MAX_POWER_NORMAL = 1.0;
-    private static final double MAX_POWER_RECOLECT = 0.210;
+    private static final double MAX_POWER_RECOLECT = 0.215; // 0.195
+    private static final double MAX_POWER_ROTACION = 0.8;
 
-// ---------------- PATH STATES ----------------
+    // ---------------- PATH STATES ----------------
 
     private static final int INICIO_A_RECOLECCION = 0;
     private static final int RECOLECCION = 1;
+
     private static final int RECOLECCION1_A_LANZAMIENTO1 = 2;
     private static final int ALINEA1 = 3;
     private static final int DISPARA1 = 4;
@@ -150,18 +153,24 @@ public class AutoAzulAudiencia extends OpMode {
     private static final int FIN = 15;
     private static final int DONE = 16;
 
+    private static final int ESPERA_PRE = 17;
+
+    private static final int DISPARO1_A_INTERMEDIO2 = 18;
+    private static final int RECOLECCION_FILA2 = 19;
+
     private int estado = INICIO_A_RECOLECCION;
 
-// ---------------- PRE-ESTADOS ----------------
+    // ---------------- PRE-ESTADOS ----------------
 
     private static final int preLeerTagObelisco = 0;
-    private static final int preAlinear = 1;
-    private static final int preDisparar = 2;
-    private static final int preListo = 3;
+    private static final int preRotar130 = 1;
+    private static final int preAlinear = 2;
+    private static final int preDisparar = 3;
+    private static final int preListo = 4;
 
-    private int preEstado = preLeerTagObelisco;
+    private int preEstado = preListo;
 
-// ---------------- TIMERS DISPARO ----------------
+    // ---------------- TIMERS DISPARO ----------------
 
     private static final long bajarMs = 380;
     private static final long cambiarLicuadoraMs = 690;
@@ -169,7 +178,7 @@ public class AutoAzulAudiencia extends OpMode {
 
     private long slotTimer = 0;
 
-// ---------------- DISPARO FSM ----------------
+    // ---------------- DISPARO FSM ----------------
 
     private static final int disparadorEmpieza = 0;
     private static final int disparadorSube = 1;
@@ -185,7 +194,7 @@ public class AutoAzulAudiencia extends OpMode {
 
     private boolean bajadoLevantador = false;
 
-// ---------------- RECOLECCIÓN FSM ----------------
+    // ---------------- RECOLECCIÓN FSM ----------------
 
     private static final int recolectorEmpieza = 0;
     private static final int recolectoCambiaLicuadora = 1;
@@ -194,7 +203,7 @@ public class AutoAzulAudiencia extends OpMode {
     private long recolectTimer = 0;
     private static final long esperarRecolectMs = 250;
 
-    private static final long colorEstableMs = 80;
+    private static final long colorEstableMs = 80; // 100
     private static final long nadaEstableMs = 60;
     private static final long enfriarGuardadoMs = 250;
 
@@ -213,91 +222,31 @@ public class AutoAzulAudiencia extends OpMode {
 
     private boolean recolectandoPath = false;
 
-// ---------------- FOLLOWER / PATHS ----------------
+    // ---------------- FOLLOWER / PATHS ----------------
 
     private Follower follower;
     private Timer pathTimer;
 
-    private final Pose posicionInicio = new Pose(56, 8, Math.toRadians(90));
-    private final Pose control1 = new Pose(55.324717285945084, 29.25848142164781);
-    private final Pose posicionRecoleccion1 = new Pose(42.50726978998386, 35.76736672051696, Math.toRadians(180));
+    private final Pose posicionInicio = new Pose(21.744094, 123.377953, Math.toRadians(146));
+    private final Pose lecturaApriltag = new Pose(52.62185257302387, 90.49706252136238, Math.toRadians(155));
+    private final Pose posicionIntermedio1 = new Pose(49.17504332755635, 90.49706252136238, Math.toRadians(180));
+    private final Pose posicionRecoleccion1 = new Pose(25.59774696707106, 90.49706252136238, Math.toRadians(180));
+    private final Pose posicionLanzamiento1 = new Pose(52.62185257302387, 90.49706252136238, Math.toRadians(180));
+    private final Pose posicionIntermedio2 = new Pose(48.45580589254766, 68.69844020797226, Math.toRadians(180));
+    private final Pose posicionRecoleccion2 = new Pose(26.73483535528596, 68.69844020797226, Math.toRadians(180));
+    private final Pose posicionLanzamiento2 = new Pose(58.14384748700175, 84.84228769497399, Math.toRadians(180));
+    private final Pose posicionFin = new Pose(62.270363951473136, 110.043327556325835, Math.toRadians(90));
 
-    private final Pose posicionFinRecoleccion1 = new Pose(23.827140549273018, 35.76736672051696);
-
-    private final Pose posicionRecoleccion1Atiro1 = new Pose(46.833602584814216, 15.558966074313398, Math.toRadians(90));
-
-    private final Pose posicionTiro1ARecoleccion2 = new Pose(41.50726978998386, 57.053053311793216, Math.toRadians(180));
-
-    private final Pose posicionFinRecoleccion2 = new Pose(24.02746365105009, 57.053053311793216, Math.toRadians(180));
-
-    private final Pose posicionRecoleccion2Atiro2 = new Pose(48.424878836833614, 81.37964458804524, Math.toRadians(125));
-
-    private final Pose posicionTiro2ARecoleccion3 = new Pose(41.903069466882066, 84.10339256865913, Math.toRadians(180));
-    private final Pose control2 = new Pose(51.035541195476576, 81.67043618739903);
-
-    private final Pose posicionFinRecoleccion3 = new Pose(27.553150242326338, 83.92245557350566, Math.toRadians(180));
-
-    private final Pose posicionRecoleccion3Atiro3 = new Pose(43.953150242326316, 94.41680129240711, Math.toRadians(128));
-
-    private final Pose posicionFin = new Pose(24.169628432956372, 70.24555735056542, Math.toRadians(180));
-    private final Pose control3 = new Pose(43.89095315024232, 70.88691437802909);
-
-    private PathChain inicioARecoleccion1, recoleccion1, recoleccion1Atiro1, tiro1ARecoleccion2, recoleccion2,
-            recoleccion2Atiro2, tiro2ARecoleccion3, recoleccion3, recoleccion3Atiro3, fin;
+    private PathChain inicioARecoleccion1;
 
     public void buildPaths() {
         inicioARecoleccion1 = follower.pathBuilder()
-                .addPath(new BezierCurve(posicionInicio, control1, posicionRecoleccion1))
-                .setLinearHeadingInterpolation(posicionInicio.getHeading(), posicionRecoleccion1.getHeading())
-                .build();
-
-        recoleccion1 = follower.pathBuilder()
-                .addPath(new BezierLine(posicionRecoleccion1, posicionFinRecoleccion1))
-                .setLinearHeadingInterpolation(posicionRecoleccion1.getHeading(), posicionRecoleccion1.getHeading())
-                .build();
-
-        recoleccion1Atiro1 = follower.pathBuilder()
-                .addPath(new BezierLine(posicionFinRecoleccion1, posicionRecoleccion1Atiro1))
-                .setLinearHeadingInterpolation(posicionRecoleccion1.getHeading(), posicionRecoleccion1Atiro1.getHeading())
-                .build();
-
-        tiro1ARecoleccion2 = follower.pathBuilder()
-                .addPath(new BezierLine(posicionRecoleccion1Atiro1, posicionTiro1ARecoleccion2))
-                .setLinearHeadingInterpolation(posicionRecoleccion1Atiro1.getHeading(), posicionTiro1ARecoleccion2.getHeading())
-                .build();
-
-        recoleccion2 = follower.pathBuilder()
-                .addPath(new BezierLine(posicionTiro1ARecoleccion2, posicionFinRecoleccion2))
-                .setLinearHeadingInterpolation(posicionTiro1ARecoleccion2.getHeading(), posicionFinRecoleccion2.getHeading())
-                .build();
-
-        recoleccion2Atiro2 = follower.pathBuilder()
-                .addPath(new BezierLine(posicionFinRecoleccion2, posicionRecoleccion2Atiro2))
-                .setLinearHeadingInterpolation(posicionFinRecoleccion2.getHeading(), posicionRecoleccion2Atiro2.getHeading())
-                .build();
-
-        tiro2ARecoleccion3 = follower.pathBuilder()
-                .addPath(new BezierCurve(posicionRecoleccion2Atiro2, control2, posicionTiro2ARecoleccion3))
-                .setLinearHeadingInterpolation(posicionRecoleccion2Atiro2.getHeading(), posicionTiro2ARecoleccion3.getHeading())
-                .build();
-
-        recoleccion3 = follower.pathBuilder()
-                .addPath(new BezierLine(posicionTiro2ARecoleccion3, posicionFinRecoleccion3))
-                .setLinearHeadingInterpolation(posicionTiro2ARecoleccion3.getHeading(), posicionTiro2ARecoleccion3.getHeading())
-                .build();
-
-        recoleccion3Atiro3 = follower.pathBuilder()
-                .addPath(new BezierLine(posicionFinRecoleccion3, posicionRecoleccion3Atiro3))
-                .setLinearHeadingInterpolation(posicionFinRecoleccion3.getHeading(), posicionRecoleccion3Atiro3.getHeading())
-                .build();
-
-        fin = follower.pathBuilder()
-                .addPath(new BezierCurve(posicionRecoleccion3Atiro3, control3, posicionFin))
-                .setLinearHeadingInterpolation(posicionRecoleccion3Atiro3.getHeading(), posicionFin.getHeading())
+                .addPath(new BezierLine(posicionInicio, lecturaApriltag))
+                .setLinearHeadingInterpolation(posicionInicio.getHeading(), lecturaApriltag.getHeading())
                 .build();
     }
 
-// ---------------- RECOLECCIÓN DINÁMICA ----------------
+    // ---------------- RECOLECCIÓN DINÁMICA ----------------
 
     private PathChain buildRecoleccion(double xFinal, double headingConstante) {
         pinpoint.update();
@@ -326,14 +275,29 @@ public class AutoAzulAudiencia extends OpMode {
                 .build();
     }
 
-// ---------------- ALINEACIÓN ----------------
+    private PathChain buildRotacionEnEje(double headingTarget) {
+        pinpoint.update();
+        double xInicio = pinpoint.getPosX(DistanceUnit.INCH);
+        double yInicio = pinpoint.getPosY(DistanceUnit.INCH);
+        double headingInicio = Math.toRadians(pinpoint.getHeading(AngleUnit.DEGREES));
+
+        Pose inicio = new Pose(xInicio, yInicio, headingInicio);
+        Pose finRot = new Pose(xInicio + deltaRotacionInch, yInicio, headingTarget);
+
+        return follower.pathBuilder()
+                .addPath(new BezierLine(inicio, finRot))
+                .setLinearHeadingInterpolation(headingInicio, headingTarget)
+                .build();
+    }
+
+    // ---------------- ALINEACIÓN ----------------
 
     private void iniciarAlineacion() {
         limaluz.pipelineSwitch(pipelineAlinear);
         centrarLanzadorServos();
         pidTimer = 0;
         errorAnterior = 0.0;
-        integralError = 0;
+        integralError = 0.0;
         alignStart = System.nanoTime();
     }
 
@@ -360,7 +324,6 @@ public class AutoAzulAudiencia extends OpMode {
         double error = -tx;
 
         if (Math.abs(error) < tolerancia) {
-            centrarLanzadorServos();
             pidTimer = 0;
             errorAnterior = 0.0;
             integralError = 0.0;
@@ -408,18 +371,65 @@ public class AutoAzulAudiencia extends OpMode {
         return ((System.nanoTime() - start) / 1_000_000) >= ms;
     }
 
+    // ---------------- PATH UPDATE ----------------
+
     private void cortarPathRecoleccionActual() {
         if (follower != null && follower.isBusy()) {
             follower.breakFollowing();
         }
     }
 
-// ---------------- PATH UPDATE ----------------
+    private void irALanzamiento1Dyn() {
+        recolectandoPath = false;
+        follower.setMaxPower(MAX_POWER_NORMAL);
+
+        pinpoint.update();
+        double xInicio = pinpoint.getPosX(DistanceUnit.INCH);
+        double yInicio = pinpoint.getPosY(DistanceUnit.INCH);
+        double headingInicio = Math.toRadians(pinpoint.getHeading(AngleUnit.DEGREES));
+
+        Pose inicio = new Pose(xInicio, yInicio, headingInicio);
+
+        Pose lanzamiento1Dyn = new Pose(
+                posicionLanzamiento1.getX(),
+                yInicio,
+                posicionLanzamiento1.getHeading()
+        );
+
+        PathChain aLanzamiento1Dyn = follower.pathBuilder()
+                .addPath(new BezierLine(inicio, lanzamiento1Dyn))
+                .setLinearHeadingInterpolation(headingInicio, lanzamiento1Dyn.getHeading())
+                .build();
+
+        follower.followPath(aLanzamiento1Dyn, true);
+        setPathState(ALINEA1);
+    }
+
+    private void irALanzamiento2() {
+        recolectandoPath = false;
+        follower.setMaxPower(MAX_POWER_NORMAL);
+
+        pinpoint.update();
+        double xInicio = pinpoint.getPosX(DistanceUnit.INCH);
+        double yInicio = pinpoint.getPosY(DistanceUnit.INCH);
+        double headingInicio = Math.toRadians(pinpoint.getHeading(AngleUnit.DEGREES));
+
+        Pose inicio = new Pose(xInicio, yInicio, headingInicio);
+
+        PathChain aLanzamiento2 = follower.pathBuilder()
+                .addPath(new BezierLine(inicio, posicionLanzamiento2))
+                .setLinearHeadingInterpolation(headingInicio, posicionLanzamiento2.getHeading())
+                .build();
+
+        follower.followPath(aLanzamiento2, true);
+        setPathState(RECOLECCION2_A_LANZAMIENTO2);
+    }
 
     public void statePathUpdate() {
         switch (estado) {
 
             case INICIO_A_RECOLECCION:
+
                 recolectandoPath = false;
                 follower.setMaxPower(MAX_POWER_NORMAL);
                 follower.followPath(inicioARecoleccion1, true);
@@ -428,62 +438,72 @@ public class AutoAzulAudiencia extends OpMode {
 
             case RECOLECCION:
                 if (!follower.isBusy()) {
-                    recolectandoPath = true;
-                    follower.setMaxPower(MAX_POWER_RECOLECT);
+                    iniciarPreDespuesDePrimerPath();
+                    setPathState(ESPERA_PRE);
+                }
+                break;
 
-                    PathChain recoleccion1Dyn = buildRecoleccion(
-                            posicionFinRecoleccion1.getX(),
-                            posicionRecoleccion1.getHeading()
+            case ESPERA_PRE:
+                if (preEstado == preListo) {
+                    if (contarSlots() == 3) {
+                        break;
+                    }
+
+                    recolectandoPath = false;
+                    follower.setMaxPower(MAX_POWER_NORMAL);
+
+                    pinpoint.update();
+                    double yBase = pinpoint.getPosY(DistanceUnit.INCH);
+
+                    Pose intermedioDyn = new Pose(
+                            posicionIntermedio1.getX(),
+                            yBase,
+                            posicionIntermedio1.getHeading()
                     );
 
-                    follower.followPath(recoleccion1Dyn, true);
+                    double headingInicio = Math.toRadians(pinpoint.getHeading(AngleUnit.DEGREES));
+
+                    PathChain aIntermedioDyn = buildLineaHacia(
+                            intermedioDyn,
+                            headingInicio,
+                            intermedioDyn.getHeading()
+                    );
+
+                    follower.followPath(aIntermedioDyn, true);
                     setPathState(RECOLECCION1_A_LANZAMIENTO1);
                 }
                 break;
 
             case RECOLECCION1_A_LANZAMIENTO1:
-                if (contarSlots() == 3) {
-                    cortarPathRecoleccionActual();
-                    recolectandoPath = false;
+                if (!follower.isBusy()) {
+                    recolectandoPath = true;
+                    follower.setMaxPower(MAX_POWER_RECOLECT);
 
-                    if (morListo) prepararLicuadoraParaDisparo(0);
-
-                    follower.setMaxPower(MAX_POWER_NORMAL);
-
-                    PathChain recoleccion1Atiro1Dyn = buildLineaHacia(
-                            posicionRecoleccion1Atiro1,
-                            posicionRecoleccion1.getHeading(),
-                            posicionRecoleccion1Atiro1.getHeading()
+                    PathChain recoleccionDyn = buildRecoleccion(
+                            posicionRecoleccion1.getX(),
+                            posicionRecoleccion1.getHeading()
                     );
 
-                    follower.followPath(recoleccion1Atiro1Dyn, true);
-                    setPathState(ALINEA1);
+                    follower.followPath(recoleccionDyn, true);
+
+                    setPathState(LANZAMIENTO1_A_RECOLECCION2);
+                }
+                break;
+
+            case LANZAMIENTO1_A_RECOLECCION2:
+                if (contarSlots() == 3) {
+                    cortarPathRecoleccionActual();
+                    irALanzamiento1Dyn();
                     break;
                 }
 
                 if (!follower.isBusy()) {
-                    recolectandoPath = false;
-
-                    if (morListo) prepararLicuadoraParaDisparo(0);
-
-                    follower.setMaxPower(MAX_POWER_NORMAL);
-
-                    PathChain recoleccion1Atiro1Dyn = buildLineaHacia(
-                            posicionRecoleccion1Atiro1,
-                            posicionRecoleccion1.getHeading(),
-                            posicionRecoleccion1Atiro1.getHeading()
-                    );
-
-                    follower.followPath(recoleccion1Atiro1Dyn, true);
-                    setPathState(ALINEA1);
+                    irALanzamiento1Dyn();
                 }
                 break;
 
             case ALINEA1:
                 if (!follower.isBusy()) {
-                    centrarLanzadorServos();
-                    alignStart = 0;
-
                     shootState = disparadorEmpieza;
                     disparosHechos = 0;
                     bajadoLevantador = false;
@@ -497,89 +517,56 @@ public class AutoAzulAudiencia extends OpMode {
                 if (dispararEnPatron()) {
                     recolectandoPath = false;
                     follower.setMaxPower(MAX_POWER_NORMAL);
-                    setPathState(LANZAMIENTO1_A_RECOLECCION2);
+
+                    pinpoint.update();
+                    double headingInicioD1 = Math.toRadians(pinpoint.getHeading(AngleUnit.DEGREES));
+
+                    PathChain aIntermedio2 = buildLineaHacia(
+                            posicionIntermedio2,
+                            headingInicioD1,
+                            posicionIntermedio2.getHeading()
+                    );
+
+                    follower.followPath(aIntermedio2, true);
+                    setPathState(DISPARO1_A_INTERMEDIO2);
                 }
                 break;
 
-            case LANZAMIENTO1_A_RECOLECCION2:
-                if (!follower.isBusy()) {
-                    recolectandoPath = false;
-                    follower.setMaxPower(MAX_POWER_NORMAL);
-                    follower.followPath(tiro1ARecoleccion2, true);
-                    setPathState(RECOLECCION2);
-                    irASlot(SLOT_X);
-                }
-                break;
-
-            case RECOLECCION2:
+            case DISPARO1_A_INTERMEDIO2:
                 if (!follower.isBusy()) {
                     recolectandoPath = true;
                     follower.setMaxPower(MAX_POWER_RECOLECT);
 
-                    PathChain recoleccion2Dyn = buildRecoleccion(
-                            posicionFinRecoleccion2.getX(),
-                            posicionTiro1ARecoleccion2.getHeading()
+                    PathChain recoleccionFila2Dyn = buildRecoleccion(
+                            posicionRecoleccion2.getX(),
+                            posicionRecoleccion2.getHeading()
                     );
 
-                    follower.followPath(recoleccion2Dyn, true);
-                    setPathState(RECOLECCION2_A_LANZAMIENTO2);
+                    follower.followPath(recoleccionFila2Dyn, true);
+                    setPathState(RECOLECCION_FILA2);
                 }
                 break;
 
-            case RECOLECCION2_A_LANZAMIENTO2:
+            case RECOLECCION_FILA2:
                 if (contarSlots() == 3) {
                     cortarPathRecoleccionActual();
-                    recolectandoPath = false;
-
-                    if (morListo) prepararLicuadoraParaDisparo(0);
-
-                    follower.setMaxPower(MAX_POWER_NORMAL);
-
-                    PathChain recoleccion2Atiro2Dyn = buildLineaHacia(
-                            posicionRecoleccion2Atiro2,
-                            posicionFinRecoleccion2.getHeading(),
-                            posicionRecoleccion2Atiro2.getHeading()
-                    );
-
-                    follower.followPath(recoleccion2Atiro2Dyn, true);
-                    setPathState(ALINEA2);
+                    irALanzamiento2();
                     break;
                 }
 
                 if (!follower.isBusy()) {
-                    recolectandoPath = false;
-
-                    if (morListo) prepararLicuadoraParaDisparo(0);
-
-                    follower.setMaxPower(MAX_POWER_NORMAL);
-
-                    PathChain recoleccion2Atiro2Dyn = buildLineaHacia(
-                            posicionRecoleccion2Atiro2,
-                            posicionFinRecoleccion2.getHeading(),
-                            posicionRecoleccion2Atiro2.getHeading()
-                    );
-
-                    follower.followPath(recoleccion2Atiro2Dyn, true);
-                    setPathState(ALINEA2);
+                    irALanzamiento2();
                 }
                 break;
 
-            case ALINEA2:
-                if (!follower.isBusy() || pasoTiempo(alignStart, 1500)) {
-                    if (alignStart == 0) iniciarAlineacion();
+            case RECOLECCION2_A_LANZAMIENTO2:
+                if (!follower.isBusy()) {
+                    shootState = disparadorEmpieza;
+                    disparosHechos = 0;
+                    bajadoLevantador = false;
 
-                    if (alinear()) {
-                        centrarLanzadorServos();
-                        alignStart = 0;
-
-                        shootState = disparadorEmpieza;
-                        disparosHechos = 0;
-                        bajadoLevantador = false;
-
-                        calcularPosicion(0);
-
-                        setPathState(DISPARA2);
-                    }
+                    calcularPosicion(0);
+                    setPathState(DISPARA2);
                 }
                 break;
 
@@ -587,104 +574,23 @@ public class AutoAzulAudiencia extends OpMode {
                 if (dispararEnPatron()) {
                     recolectandoPath = false;
                     follower.setMaxPower(MAX_POWER_NORMAL);
-                    setPathState(LANZAMIENTO2_A_RECOLECCION3);
-                }
-                break;
 
-            case LANZAMIENTO2_A_RECOLECCION3:
-                if (!follower.isBusy()) {
-                    recolectandoPath = false;
-                    follower.setMaxPower(MAX_POWER_NORMAL);
-                    follower.followPath(tiro2ARecoleccion3, true);
-                    setPathState(RECOLECCION3);
-                }
-                break;
+                    pinpoint.update();
+                    double headingInicioFin = Math.toRadians(pinpoint.getHeading(AngleUnit.DEGREES));
 
-            case RECOLECCION3:
-                if (!follower.isBusy()) {
-                    recolectandoPath = true;
-                    follower.setMaxPower(MAX_POWER_RECOLECT);
-
-                    PathChain recoleccion3Dyn = buildRecoleccion(
-                            posicionFinRecoleccion3.getX(),
-                            posicionTiro2ARecoleccion3.getHeading()
+                    PathChain aFin = buildLineaHacia(
+                            posicionFin,
+                            headingInicioFin,
+                            posicionFin.getHeading()
                     );
 
-                    follower.followPath(recoleccion3Dyn, true);
-                    setPathState(RECOLECCION3_A_LANZAMIENTO3);
-                }
-                break;
-
-            case RECOLECCION3_A_LANZAMIENTO3:
-                if (contarSlots() == 3) {
-                    cortarPathRecoleccionActual();
-                    recolectandoPath = false;
-
-                    if (morListo) prepararLicuadoraParaDisparo(0);
-
-                    follower.setMaxPower(MAX_POWER_NORMAL);
-
-                    PathChain recoleccion3Atiro3Dyn = buildLineaHacia(
-                            posicionRecoleccion3Atiro3,
-                            posicionFinRecoleccion3.getHeading(),
-                            posicionRecoleccion3Atiro3.getHeading()
-                    );
-
-                    follower.followPath(recoleccion3Atiro3Dyn, true);
-                    setPathState(ALINEA3);
-                    break;
-                }
-
-                if (!follower.isBusy()) {
-                    recolectandoPath = false;
-
-                    if (morListo) prepararLicuadoraParaDisparo(0);
-
-                    follower.setMaxPower(MAX_POWER_NORMAL);
-
-                    PathChain recoleccion3Atiro3Dyn = buildLineaHacia(
-                            posicionRecoleccion3Atiro3,
-                            posicionFinRecoleccion3.getHeading(),
-                            posicionRecoleccion3Atiro3.getHeading()
-                    );
-
-                    follower.followPath(recoleccion3Atiro3Dyn, true);
-                    setPathState(ALINEA3);
-                }
-                break;
-
-            case ALINEA3:
-                if (!follower.isBusy()) {
-                    if (alignStart == 0) iniciarAlineacion();
-
-                    if (alinear()) {
-                        centrarLanzadorServos();
-                        alignStart = 0;
-
-                        shootState = disparadorEmpieza;
-                        disparosHechos = 0;
-                        bajadoLevantador = false;
-
-                        calcularPosicion(0);
-
-                        setPathState(DISPARA3);
-                    }
-                }
-                break;
-
-            case DISPARA3:
-                if (dispararEnPatron()) {
-                    recolectandoPath = false;
-                    follower.setMaxPower(MAX_POWER_NORMAL);
+                    follower.followPath(aFin, true);
                     setPathState(FIN);
                 }
                 break;
 
             case FIN:
                 if (!follower.isBusy()) {
-                    recolectandoPath = false;
-                    follower.setMaxPower(MAX_POWER_NORMAL);
-                    follower.followPath(fin, true);
                     setPathState(DONE);
                 }
                 break;
@@ -698,6 +604,9 @@ public class AutoAzulAudiencia extends OpMode {
                 telemetry.addLine("DONE");
                 telemetry.update();
                 break;
+
+            default:
+                break;
         }
     }
 
@@ -710,7 +619,24 @@ public class AutoAzulAudiencia extends OpMode {
         }
     }
 
-// ---------------- PRE-LOGICA ----------------
+    // ---------------- PRE-LOGICA ----------------
+
+    private void iniciarPreDespuesDePrimerPath() {
+        limaluz.pipelineSwitch(pipelineLeer);
+        leidoID = -1;
+
+        preEstado = preLeerTagObelisco;
+        preStart = System.nanoTime();
+        alignStart = 0;
+
+        pidTimer = 0;
+        errorAnterior = 0.0;
+        integralError = 0.0;
+
+        shootState = disparadorEmpieza;
+        disparosHechos = 0;
+        bajadoLevantador = false;
+    }
 
     private void preUpdate() {
         switch (preEstado) {
@@ -719,9 +645,15 @@ public class AutoAzulAudiencia extends OpMode {
                 leerTagPre();
                 break;
 
+            case preRotar130:
+                if (!follower.isBusy()) {
+                    iniciarAlineacion();
+                    preEstado = preAlinear;
+                }
+                break;
+
             case preAlinear:
                 if (alinear() || pasoTiempo(alignStart, timeutAlinearMs)) {
-                    centrarLanzadorServos();
                     alignStart = 0;
 
                     preEstado = preDisparar;
@@ -763,15 +695,21 @@ public class AutoAzulAudiencia extends OpMode {
         if (pasoTiempo(preStart, p5Ms)) {
             limaluz.pipelineSwitch(pipelineAlinear);
             centrarLanzadorServos();
+
             pidTimer = 0;
             errorAnterior = 0.0;
+            integralError = 0.0;
 
-            preEstado = preAlinear;
-            alignStart = System.nanoTime();
+            follower.setMaxPower(MAX_POWER_ROTACION);
+
+            PathChain rotar = buildRotacionEnEje(headingPre);
+            follower.followPath(rotar, true);
+
+            preEstado = preRotar130;
         }
     }
 
-// ---------------- LICUADORA ----------------
+    // ---------------- LICUADORA ----------------
 
     private int countsDeSlot(int slot) {
         if (slot == SLOT_A) return posA;
@@ -1015,7 +953,7 @@ public class AutoAzulAudiencia extends OpMode {
 
     private void recolectar(){
         if (recolectandoPath) {
-            Recogedor.setPower(1);
+            Recogedor.setPower(0.85);
             detectarColor();
             guardarEnMemoria();
         } else {
@@ -1027,7 +965,7 @@ public class AutoAzulAudiencia extends OpMode {
         }
     }
 
-// ---------------- DISPARO ----------------
+    // ---------------- DISPARO ----------------
 
     private int calcularVelocidadDisparo() {
         pinpoint.update();
@@ -1045,7 +983,7 @@ public class AutoAzulAudiencia extends OpMode {
 
         Direccion.setPosition(direccion);
 
-        return (int) (793.60311 * Math.pow(1.19091, xb));
+        return (int) (813.7256 * Math.pow(1.18115, xb));
     }
 
     private int slotDeColor(String color) {
@@ -1181,7 +1119,7 @@ public class AutoAzulAudiencia extends OpMode {
         Storage.set(lista_MOR.get(0), lista_MOR.get(1), lista_MOR.get(2));
     }
 
-// ---------------- COLOR ----------------
+    // ---------------- COLOR ----------------
 
     private void camaraColor() {
         sensorColor = new PredominantColorProcessor.Builder()
@@ -1243,7 +1181,7 @@ public class AutoAzulAudiencia extends OpMode {
         }
     }
 
-// ---------------- OPMODE ----------------
+    // ---------------- OPMODE ----------------
 
     @Override
     public void init() {
@@ -1287,10 +1225,12 @@ public class AutoAzulAudiencia extends OpMode {
         centrarLanzadorServos();
 
         configurePinpoint();
-        pinpoint.setPosition(new Pose2D(DistanceUnit.INCH, 56, 8, AngleUnit.DEGREES, 90));
+        pinpoint.setPosition(new Pose2D(
+                DistanceUnit.INCH,
+                posicionInicio.getX(), posicionInicio.getY(),
+                AngleUnit.DEGREES, Math.toDegrees(posicionInicio.getHeading())
+        ));
         pinpoint.update();
-
-        preEstado = preLeerTagObelisco;
 
         buildPaths();
         follower.setPose(posicionInicio);
@@ -1313,6 +1253,8 @@ public class AutoAzulAudiencia extends OpMode {
 
         morListo = false;
         licuadoraListaInicio = false;
+
+        preEstado = preListo;
     }
 
     @Override
@@ -1322,8 +1264,8 @@ public class AutoAzulAudiencia extends OpMode {
         limaluz.pipelineSwitch(pipelineLeer);
         leidoID = -1;
 
-        preEstado = preLeerTagObelisco;
-        preStart = System.nanoTime();
+        preEstado = preListo;
+        preStart = 0;
         alignStart = 0;
 
         shootState = disparadorEmpieza;
@@ -1348,22 +1290,21 @@ public class AutoAzulAudiencia extends OpMode {
         M_lanzador2.setVelocity(v);
 
         licuadoraPID();
-        determinarMor();
         calcularVelocidadDisparo();
 
+        follower.update();
+        statePathUpdate();
         preUpdate();
 
-        if (preEstado == preListo) {
-            follower.update();
-            statePathUpdate();
-            recolectar();
-        }
+        recolectar();
 
         telemetry.addData("slotX", slotX);
         telemetry.addData("slotA", slotA);
         telemetry.addData("slotB", slotB);
         telemetry.addData("Tag (P5)", leidoID);
         telemetry.addData("Corr", correccion);
+        telemetry.addData("Estado", estado);
+        telemetry.addData("preEstado", preEstado);
 
         telemetry.update();
 
@@ -1383,7 +1324,7 @@ public class AutoAzulAudiencia extends OpMode {
         );
     }
 
-// ---------------- PID CONTROLLER ----------------
+    // ---------------- PID CONTROLLER ----------------
 
     public class PIDController {
         double kP, kI, kD;

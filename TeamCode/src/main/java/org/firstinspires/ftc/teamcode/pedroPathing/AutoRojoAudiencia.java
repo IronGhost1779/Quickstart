@@ -33,8 +33,8 @@ import org.firstinspires.ftc.vision.opencv.PredominantColorProcessor;
 import java.util.ArrayList;
 import java.util.List;
 
-@Autonomous(name="Auto Azul Audiencia")
-public class AutoAzulAudiencia extends OpMode {
+@Autonomous(name="Auto Rojo Audiencia")
+public class AutoRojoAudiencia extends OpMode {
 
 // ---------------- HARDWARE ----------------
 
@@ -91,7 +91,7 @@ public class AutoAzulAudiencia extends OpMode {
 // ---------------- DISPARO ----------------
 
     double goalY = 332.74;
-    double goalX = 40.64;
+    double goalX = newNumber(40.64);
     double xb;
 
     double H2 = 0.85675;
@@ -218,30 +218,20 @@ public class AutoAzulAudiencia extends OpMode {
     private Follower follower;
     private Timer pathTimer;
 
-    private final Pose posicionInicio = new Pose(56, 8, Math.toRadians(90));
-    private final Pose control1 = new Pose(55.324717285945084, 29.25848142164781);
-    private final Pose posicionRecoleccion1 = new Pose(42.50726978998386, 35.76736672051696, Math.toRadians(180));
-
-    private final Pose posicionFinRecoleccion1 = new Pose(23.827140549273018, 35.76736672051696);
-
-    private final Pose posicionRecoleccion1Atiro1 = new Pose(46.833602584814216, 15.558966074313398, Math.toRadians(90));
-
-    private final Pose posicionTiro1ARecoleccion2 = new Pose(41.50726978998386, 57.053053311793216, Math.toRadians(180));
-
-    private final Pose posicionFinRecoleccion2 = new Pose(24.02746365105009, 57.053053311793216, Math.toRadians(180));
-
-    private final Pose posicionRecoleccion2Atiro2 = new Pose(48.424878836833614, 81.37964458804524, Math.toRadians(125));
-
-    private final Pose posicionTiro2ARecoleccion3 = new Pose(41.903069466882066, 84.10339256865913, Math.toRadians(180));
-    private final Pose control2 = new Pose(51.035541195476576, 81.67043618739903);
-
-    private final Pose posicionFinRecoleccion3 = new Pose(27.553150242326338, 83.92245557350566, Math.toRadians(180));
-
-    private final Pose posicionRecoleccion3Atiro3 = new Pose(43.953150242326316, 94.41680129240711, Math.toRadians(128));
-
-    private final Pose posicionFin = new Pose(24.169628432956372, 70.24555735056542, Math.toRadians(180));
-    private final Pose control3 = new Pose(43.89095315024232, 70.88691437802909);
-
+    private final Pose posicionInicio = new Pose(newNumber(56), 8, Math.toRadians(newAngle(90)));
+    private final Pose control1 = new Pose(newNumber(55.324717285945084), 29.25848142164781);
+    private final Pose posicionRecoleccion1 = new Pose(newNumber(42.50726978998386), 35.76736672051696, Math.toRadians(newAngle(180)));
+    private final Pose posicionFinRecoleccion1 = new Pose(newNumber(23.827140549273018), 35.76736672051696);
+    private final Pose posicionRecoleccion1Atiro1 = new Pose(newNumber(46.833602584814216), 15.558966074313398, Math.toRadians(newAngle(90)));
+    private final Pose posicionTiro1ARecoleccion2 = new Pose(newNumber(41.50726978998386), 57.053053311793216, Math.toRadians(newAngle(180)));
+    private final Pose posicionFinRecoleccion2 = new Pose(newNumber(24.02746365105009), 57.053053311793216, Math.toRadians(newAngle(180)));
+    private final Pose posicionRecoleccion2Atiro2 = new Pose(newNumber(48.424878836833614), 81.37964458804524, Math.toRadians(newAngle(125)));
+    private final Pose posicionTiro2ARecoleccion3 = new Pose(newNumber(41.903069466882066), 84.10339256865913, Math.toRadians(newAngle(180)));
+    private final Pose control2 = new Pose(newNumber(51.035541195476576), 81.67043618739903);
+    private final Pose posicionFinRecoleccion3 = new Pose(newNumber(27.553150242326338), 83.92245557350566, Math.toRadians(newAngle(180)));
+    private final Pose posicionRecoleccion3Atiro3 = new Pose(newNumber(43.953150242326316), 94.41680129240711, Math.toRadians(newAngle(128)));
+    private final Pose posicionFin = new Pose(newNumber(24.169628432956372), 70.24555735056542, Math.toRadians(newAngle(180)));
+    private final Pose control3 = new Pose(newNumber(43.89095315024232), 70.88691437802909);
     private PathChain inicioARecoleccion1, recoleccion1, recoleccion1Atiro1, tiro1ARecoleccion2, recoleccion2,
             recoleccion2Atiro2, tiro2ARecoleccion3, recoleccion3, recoleccion3Atiro3, fin;
 
@@ -1381,6 +1371,16 @@ public class AutoAzulAudiencia extends OpMode {
                 GoBildaPinpointDriver.EncoderDirection.FORWARD,
                 GoBildaPinpointDriver.EncoderDirection.REVERSED
         );
+    }
+
+    public double newNumber(double x){
+        double res = 144.0 - x;
+        return res;
+    }
+
+    public int newAngle(int x){
+        int res = 180-x;
+        return res;
     }
 
 // ---------------- PID CONTROLLER ----------------

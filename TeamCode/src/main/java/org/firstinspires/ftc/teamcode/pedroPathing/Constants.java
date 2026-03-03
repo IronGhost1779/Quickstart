@@ -16,14 +16,14 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
 public class Constants {
     public static FollowerConstants followerConstants = new FollowerConstants()
-            .mass(12.365)
+            .mass(14.150)
 
-            .forwardZeroPowerAcceleration(-63.10221870069184)
-            .lateralZeroPowerAcceleration(-56.11738655265623)
+            .forwardZeroPowerAcceleration(-28.42124519029252)
+            .lateralZeroPowerAcceleration(-56.67957252937972)
 
             .translationalPIDFCoefficients(new PIDFCoefficients(0.15, 0.0, 0.015, 0.0225 ))
             .headingPIDFCoefficients(new PIDFCoefficients(1.4, 0, 0.002, 0.015))
-            .drivePIDFCoefficients(new FilteredPIDFCoefficients(0.05, 0, 0.0002, 0.6, 0.0012))
+            .drivePIDFCoefficients(new FilteredPIDFCoefficients(0.05, 0.00025, 0.0002, 0.6, 0.002))
 
             .centripetalScaling(0.00025);
 
@@ -40,8 +40,8 @@ public class Constants {
             .rightFrontMotorDirection(DcMotorSimple.Direction.FORWARD)
             .rightRearMotorDirection(DcMotorSimple.Direction.FORWARD)
 
-            .xVelocity(66.82458303857038)
-            .yVelocity(49.86857737143209);
+            .xVelocity(65.55825829693651)
+            .yVelocity(53.18702565591167);
 
     public static PinpointConstants localizerConstants = new PinpointConstants()
             .forwardPodY(-110/2.54)
@@ -54,8 +54,8 @@ public class Constants {
 
     public static PathConstraints pathConstraints = new PathConstraints(0.99,
             100,
-            1.5,
-            0.3);
+            1.4,
+            4);
 
     public static Follower createFollower(HardwareMap hardwareMap) {
         return new FollowerBuilder(followerConstants, hardwareMap)
