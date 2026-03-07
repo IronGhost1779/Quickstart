@@ -35,7 +35,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @TeleOp
-public class TeleOpFinal extends LinearOpMode {
+public class TeleOpFinalR extends LinearOpMode {
 
     // Inicialización de motores, servos, camara, pinpoint y MOR
 
@@ -244,15 +244,15 @@ public class TeleOpFinal extends LinearOpMode {
     // Toda la lógica de los followers (puntos pre programados)
     private Follower follower;
 
-    private final Pose posicionTiroMedio = new Pose(72, 72, Math.toRadians(140));
+    private final Pose posicionTiroMedio = new Pose(72, 72, Math.toRadians(newAngle(140)));
     private final Pose posicionTiroAudiencia = new Pose(72
-            , 24.83360258481423, Math.toRadians(120));
-    private final Pose posicionSecretTunnel = new Pose(26.99030694668821
-            , 64.12762520193863, Math.toRadians(180));
-    private final Pose posicionHumanPlayer = new Pose(100.4361873990307
-            , 20.180936995153473, Math.toRadians(0));
-    private final Pose posicionAZonaDeParqueo = new Pose(90.7012987012987
-            , 33.89610389610389, Math.toRadians(180));
+            , 24.83360258481423, Math.toRadians(newAngle(120)));
+    private final Pose posicionSecretTunnel = new Pose(newNumber(26.99030694668821)
+            , 64.12762520193863, Math.toRadians(newAngle(180)));
+    private final Pose posicionHumanPlayer = new Pose(newNumber(100.4361873990307)
+            , 20.180936995153473, Math.toRadians(newAngle(0)));
+    private final Pose posicionAZonaDeParqueo = new Pose(newNumber(90.7012987012987)
+            , 33.89610389610389, Math.toRadians(newAngle(  180)));
 
     private boolean autoPath = false;
     private boolean prevDpadUp = false;
@@ -306,7 +306,7 @@ public class TeleOpFinal extends LinearOpMode {
 
         limaluz = hardwareMap.get(Limelight3A.class, "limaluz");
         limaluz.setPollRateHz(90);
-        limaluz.pipelineSwitch(6);
+        limaluz.pipelineSwitch(7);
 
         Direccion.setDirection(Servo.Direction.REVERSE);
 
@@ -532,6 +532,7 @@ public class TeleOpFinal extends LinearOpMode {
 
             boolean intakeOn = gamepad1.left_bumper;
             boolean intakeOnInverso = gamepad1.right_bumper;
+
             boolean recolectandoAhora = intakeOn || intakeOnInverso;
 
             if (intakeOnInverso && !intakeOn) {
@@ -656,16 +657,14 @@ public class TeleOpFinal extends LinearOpMode {
                 }
             }
 
+
             Storage.set1((float) pinpoint.getPosX(DistanceUnit.INCH),
                     (float) pinpoint.getPosY(DistanceUnit.INCH),
                     (float) pinpoint.getHeading(AngleUnit.DEGREES));
 
             // Disparo de un artefacto
 
-            // int v = (int) (969.5520984852944 * Math.pow(xb, 0.2841685069817));
-
-            int v =  (int) (829.40011 * Math.pow(1.17945, xb));
-
+            int v = (int) (852.02572 * Math.pow(1.16336, xb));
 
             M_lanzador1.setVelocity(v);
             M_lanzador2.setVelocity(v);
@@ -990,7 +989,7 @@ public class TeleOpFinal extends LinearOpMode {
                 double velActual = (M_lanzador1.getVelocity() + M_lanzador2.getVelocity()) / 2;
                 long ms = (System.nanoTime() - shootTimer) / 1_000_000;
 
-                if ((Math.abs(velActual - v) < 200 || ms > 500) && enPosicion() && !levantadorBusy()) {
+                if ((Math.abs(velActual - v) < 50 || ms > 500) && enPosicion() && !levantadorBusy()) {
                     setLevantador(1.0);
                     shootTimer = System.nanoTime();
                     shootState = disparadorBaja;
@@ -1078,7 +1077,7 @@ public class TeleOpFinal extends LinearOpMode {
                 double velActual = (M_lanzador1.getVelocity() + M_lanzador2.getVelocity()) / 2;
                 long ms = (System.nanoTime() - shootTimer) / 1_000_000;
 
-                if ((Math.abs(velActual - v) < 200 || ms > 500) && enPosicion() && !levantadorBusy()) {
+                if ((Math.abs(velActual - v) < 50 || ms > 500) && enPosicion() && !levantadorBusy()) {
                     setLevantador(1.0);
                     shootTimer = System.nanoTime();
                     shootState = disparadorBaja;
@@ -1303,5 +1302,15 @@ public class TeleOpFinal extends LinearOpMode {
                 .build();
 
         follower.followPath(path, true);
+    }
+
+    public double newNumber(double x){
+        double res = 144.0 - x;
+        return res;
+    }
+
+    public double newAngle(double x){
+        double res = 180-x;
+        return res;
     }
 }

@@ -32,7 +32,7 @@ import org.firstinspires.ftc.vision.opencv.PredominantColorProcessor;
 import java.util.ArrayList;
 import java.util.List;
 
-@Autonomous(name="Auto Rojo Goal")
+@Autonomous(name="Auto Azul Goal")
 public class AutoRojoGoal extends OpMode {
 
     // ---------------- HARDWARE ----------------
@@ -90,7 +90,7 @@ public class AutoRojoGoal extends OpMode {
     // ---------------- DISPARO ----------------
 
     double goalY = 332.74;
-    double goalX = newNumber(40.64);
+    double goalX = 40.64;
     double xb;
 
     double H2 = 0.85675;
@@ -113,10 +113,10 @@ public class AutoRojoGoal extends OpMode {
 
     private double correccion = SERVO_CENTER;
 
-    private static final double tolerancia = 0.34;
+    private static final double tolerancia = 0.04;
 
-    private static final long p5Ms = 50;
-    private static final long timeutAlinearMs = 3000;
+    private static final long p5Ms = 80;
+    private static final long timeutAlinearMs = 1500; // 2300
 
     private long preStart = 0;
     private long alignStart = 0;
@@ -227,15 +227,25 @@ public class AutoRojoGoal extends OpMode {
     private Follower follower;
     private Timer pathTimer;
 
-    private final Pose posicionInicio = new Pose(newNumber(21.744094), 123.377953, Math.toRadians(newAngle(146)));
-    private final Pose lecturaApriltag = new Pose(newNumber(52.62185257302387), 90.49706252136238, Math.toRadians(newAngle(155)));
-    private final Pose posicionIntermedio1 = new Pose(newNumber(49.17504332755635), 90.49706252136238, Math.toRadians(newAngle(180)));
-    private final Pose posicionRecoleccion1 = new Pose(newNumber(25.59774696707106), 90.49706252136238, Math.toRadians(newAngle(180)));
-    private final Pose posicionLanzamiento1 = new Pose(newNumber(52.62185257302387), 90.49706252136238, Math.toRadians(newAngle(180)));
-    private final Pose posicionIntermedio2 = new Pose(newNumber(48.45580589254766), 68.69844020797226, Math.toRadians(newAngle(180)));
-    private final Pose posicionRecoleccion2 = new Pose(newNumber(26.73483535528596), 68.69844020797226, Math.toRadians(newAngle(180)));
-    private final Pose posicionLanzamiento2 = new Pose(newNumber(58.14384748700175), 84.84228769497399, Math.toRadians(newAngle(180)));
-    private final Pose posicionFin = new Pose(newNumber(62.270363951473136), 110.043327556325835, Math.toRadians(newAngle(90)));
+    private final Pose posicionInicio = new Pose(newNumber(21.744094)
+            , 123.377953, Math.toRadians(newNumber(146)));
+    private final Pose lecturaApriltag = new Pose(newNumber(52.62185257302387)
+            , 90.49706252136238, Math.toRadians(newNumber(155)));
+    private final Pose posicionIntermedio1 = new Pose(newNumber(49.17504332755635)
+            , 90.49706252136238, Math.toRadians(newNumber(180)));
+    private final Pose posicionRecoleccion1 = new Pose(newNumber(25.59774696707106)
+            , 90.49706252136238, Math.toRadians(newNumber(180)));
+    private final Pose posicionLanzamiento1 = new Pose(newNumber(52.62185257302387)
+            , 90.49706252136238, Math.toRadians(newNumber(180)));
+    private final Pose posicionIntermedio2 = new Pose(newNumber(48.45580589254766)
+            , 68.69844020797226, Math.toRadians(newNumber(180)));
+    private final Pose posicionRecoleccion2 = new Pose(newNumber(26.73483535528596)
+            , 68.69844020797226, Math.toRadians(newNumber(180)));
+    private final Pose posicionLanzamiento2 = new Pose(newNumber(58.14384748700175)
+            , 84.84228769497399, Math.toRadians(newNumber(180)));
+    private final Pose posicionFin = new Pose(newNumber(62.270363951473136)
+            , 110.043327556325835, Math.toRadians(newNumber(90)));
+
     private PathChain inicioARecoleccion1;
 
     public void buildPaths() {
@@ -952,7 +962,7 @@ public class AutoRojoGoal extends OpMode {
 
     private void recolectar(){
         if (recolectandoPath) {
-            Recogedor.setPower(0.85);
+            Recogedor.setPower(-1);
             detectarColor();
             guardarEnMemoria();
         } else {
@@ -982,7 +992,8 @@ public class AutoRojoGoal extends OpMode {
 
         Direccion.setPosition(direccion);
 
-        return (int) (813.7256 * Math.pow(1.18115, xb));
+        // return (int) (829.40011 * Math.pow(1.17945, xb));
+        return (int) (969.5520984852944 * Math.pow(xb, 0.2841685069817));
     }
 
     private int slotDeColor(String color) {
@@ -1027,12 +1038,20 @@ public class AutoRojoGoal extends OpMode {
     private boolean dispararEnPatron() {
         int v = (int) (calcularVelocidadDisparo());
 
+        Recogedor.setPower(1);
+
         switch (shootState) {
 
             case disparadorEmpieza:
-                shootTimer = System.nanoTime();
-                shootState = disparadorSube;
-                return false;
+
+                long ms1 = (System.nanoTime()) / 1_000_000;
+
+                if(ms1 > 400){
+                    Recogedor.setPower(0);
+                    shootTimer = System.nanoTime();
+                    shootState = disparadorSube;
+                    return false;
+                }
 
             case disparadorSube: {
                 double velActual = (M_lanzador1.getVelocity() + M_lanzador2.getVelocity())/2;
@@ -1332,7 +1351,6 @@ public class AutoRojoGoal extends OpMode {
         int res = 180-x;
         return res;
     }
-
 
     // ---------------- PID CONTROLLER ----------------
 

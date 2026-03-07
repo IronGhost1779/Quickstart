@@ -53,7 +53,7 @@ public class AutoRojoAudiencia extends OpMode {
 // ---------------- LIMELIGHT ----------------
 
     private static final int pipelineLeer = 5;
-    private static final int pipelineAlinear = 6;
+    private static final int pipelineAlinear = 7;
 
     public int leidoID = -1;
 
@@ -114,10 +114,10 @@ public class AutoRojoAudiencia extends OpMode {
 
     private double correccion = SERVO_CENTER;
 
-    private static final double tolerancia = 0.29;
+    private static final double tolerancia = 0.04;
 
-    private static final long p5Ms = 25;
-    private static final long timeutAlinearMs = 3500;
+    private static final long p5Ms = 30;
+    private static final long timeutAlinearMs = 1900;
 
     private long preStart = 0;
     private long alignStart = 0;
@@ -220,10 +220,12 @@ public class AutoRojoAudiencia extends OpMode {
 
     private final Pose posicionInicio = new Pose(newNumber(56), 8, Math.toRadians(newAngle(90)));
     private final Pose control1 = new Pose(newNumber(55.324717285945084), 29.25848142164781);
-    private final Pose posicionRecoleccion1 = new Pose(newNumber(42.50726978998386), 35.76736672051696, Math.toRadians(newAngle(180)));
+    private final Pose posicionRecoleccion1 = new Pose(newNumber(46.50726978998386)
+            , 31.76736672051696, Math.toRadians(newAngle(180)));
     private final Pose posicionFinRecoleccion1 = new Pose(newNumber(23.827140549273018), 35.76736672051696);
     private final Pose posicionRecoleccion1Atiro1 = new Pose(newNumber(46.833602584814216), 15.558966074313398, Math.toRadians(newAngle(90)));
-    private final Pose posicionTiro1ARecoleccion2 = new Pose(newNumber(41.50726978998386), 57.053053311793216, Math.toRadians(newAngle(180)));
+    private final Pose posicionTiro1ARecoleccion2 = new Pose(newNumber(46.50726978998386)
+            , 55.053053311793216, Math.toRadians(newAngle(180)));
     private final Pose posicionFinRecoleccion2 = new Pose(newNumber(24.02746365105009), 57.053053311793216, Math.toRadians(newAngle(180)));
     private final Pose posicionRecoleccion2Atiro2 = new Pose(newNumber(48.424878836833614), 81.37964458804524, Math.toRadians(newAngle(125)));
     private final Pose posicionTiro2ARecoleccion3 = new Pose(newNumber(41.903069466882066), 84.10339256865913, Math.toRadians(newAngle(180)));
@@ -1005,7 +1007,7 @@ public class AutoRojoAudiencia extends OpMode {
 
     private void recolectar(){
         if (recolectandoPath) {
-            Recogedor.setPower(1);
+            Recogedor.setPower(-1);
             detectarColor();
             guardarEnMemoria();
         } else {
@@ -1035,7 +1037,10 @@ public class AutoRojoAudiencia extends OpMode {
 
         Direccion.setPosition(direccion);
 
-        return (int) (793.60311 * Math.pow(1.19091, xb));
+        // return (int) (829.40011 * Math.pow(1.17945, xb));
+
+        return (int) (969.5520984852944 * Math.pow(xb, 0.2841685069817));
+
     }
 
     private int slotDeColor(String color) {
@@ -1080,12 +1085,20 @@ public class AutoRojoAudiencia extends OpMode {
     private boolean dispararEnPatron() {
         int v = (int) (calcularVelocidadDisparo());
 
+        Recogedor.setPower(1);
+
         switch (shootState) {
 
             case disparadorEmpieza:
-                shootTimer = System.nanoTime();
-                shootState = disparadorSube;
-                return false;
+
+                long ms1 = (System.nanoTime()) / 1_000_000;
+
+                if(ms1 > 400){
+                    Recogedor.setPower(0);
+                    shootTimer = System.nanoTime();
+                    shootState = disparadorSube;
+                    return false;
+                }
 
             case disparadorSube: {
                 double velActual = (M_lanzador1.getVelocity() + M_lanzador2.getVelocity())/2;

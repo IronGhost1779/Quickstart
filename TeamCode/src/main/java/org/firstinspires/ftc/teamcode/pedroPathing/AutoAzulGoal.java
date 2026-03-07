@@ -113,10 +113,10 @@ public class AutoAzulGoal extends OpMode {
 
     private double correccion = SERVO_CENTER;
 
-    private static final double tolerancia = 0.34;
+    private static final double tolerancia = 0.04;
 
-    private static final long p5Ms = 50;
-    private static final long timeutAlinearMs = 3000;
+    private static final long p5Ms = 80;
+    private static final long timeutAlinearMs = 1500; // 2300
 
     private long preStart = 0;
     private long alignStart = 0;
@@ -953,7 +953,7 @@ public class AutoAzulGoal extends OpMode {
 
     private void recolectar(){
         if (recolectandoPath) {
-            Recogedor.setPower(0.85);
+            Recogedor.setPower(-1);
             detectarColor();
             guardarEnMemoria();
         } else {
@@ -983,7 +983,8 @@ public class AutoAzulGoal extends OpMode {
 
         Direccion.setPosition(direccion);
 
-        return (int) (813.7256 * Math.pow(1.18115, xb));
+        // return (int) (829.40011 * Math.pow(1.17945, xb));
+        return (int) (969.5520984852944 * Math.pow(xb, 0.2841685069817));
     }
 
     private int slotDeColor(String color) {
@@ -1028,12 +1029,20 @@ public class AutoAzulGoal extends OpMode {
     private boolean dispararEnPatron() {
         int v = (int) (calcularVelocidadDisparo());
 
+        Recogedor.setPower(1);
+
         switch (shootState) {
 
             case disparadorEmpieza:
-                shootTimer = System.nanoTime();
-                shootState = disparadorSube;
-                return false;
+
+                long ms1 = (System.nanoTime()) / 1_000_000;
+
+                if(ms1 > 400){
+                    Recogedor.setPower(0);
+                    shootTimer = System.nanoTime();
+                    shootState = disparadorSube;
+                    return false;
+                }
 
             case disparadorSube: {
                 double velActual = (M_lanzador1.getVelocity() + M_lanzador2.getVelocity())/2;
